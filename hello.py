@@ -30,3 +30,7 @@ print("Day 2:", followers)
 followers -= 10
 print("Day 3:", followers)
 
+#Activity 3
+#2a) No
+#2b) Existing value of follwers
+#2c) To modify the a variable existing value and save the result into the same varaible
