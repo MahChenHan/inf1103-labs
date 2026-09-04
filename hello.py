@@ -34,3 +34,14 @@ print("Day 3:", followers)
 #2a) No
 #2b) Existing value of follwers
 #2c) To modify the a variable existing value and save the result into the same varaible
+
+username = input("Enter Username: ")
+age = input("Enter Age: ")
+category = input("Enter Content Category: ")
+
+print("\nInstagram Profile")
+print("================================")
+print("Username:", username)
+print("Age:", age)
+print("Category:", category)
+
