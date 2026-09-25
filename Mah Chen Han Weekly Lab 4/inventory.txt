@@ -1,0 +1,4 @@
+1001,Mouse,2
+1002,Laptop Stand,4
+1003,Monitor,1
+1004,Keyboard,2
