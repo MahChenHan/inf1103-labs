@@ -5,7 +5,7 @@ FILENAME = "inventory.json"
 
 
 def load_inventory():
-    """Check whether inventory.json exists and load it; otherwise return default inventory."""
+    """Check whether inventory.json exists and load it; otherwise return an empty inventory."""
     if os.path.exists(FILENAME):
         try:
             with open(FILENAME, "r") as file:
@@ -19,11 +19,7 @@ def load_inventory():
     else:
         print(f"{FILENAME} not found.")
         print("Starting with empty inventory.\n")
-        return {
-            "P001": {"name": "Laptop", "price": 1200.00, "stock": 15},
-            "P002": {"name": "Mouse", "price": 25.50, "stock": 40},
-            "P003": {"name": "Keyboard", "price": 45.00, "stock": 25},
-        }
+        return {}
 
 
 def save_inventory(inventory, auto_exit=False):
@@ -54,7 +50,7 @@ def display_all(inventory):
 
 
 def add_product(inventory):
-    """Add a new product to the inventory dictionary."""
+    """Add a new product to the inventory dictionary via user input."""
     print("\nAdd New Product")
     item_id = input("Product ID: ").strip()
 
