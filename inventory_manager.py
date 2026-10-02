@@ -1,15 +1,29 @@
+import json
 import os
 
 FILENAME = "inventory.json"
 
 
-def init_inventory():
-    """Initialize default inventory with dictionary data structures."""
-    return {
-        "P001": {"name": "Laptop", "price": 1200.00, "stock": 15},
-        "P002": {"name": "Mouse", "price": 25.50, "stock": 40},
-        "P003": {"name": "Keyboard", "price": 45.00, "stock": 25},
-    }
+def load_inventory():
+    """Check whether inventory.json exists and load it; otherwise return default inventory."""
+    if os.path.exists(FILENAME):
+        try:
+            with open(FILENAME, "r") as file:
+                print(f"{FILENAME} found.")
+                print("Inventory loaded successfully.\n")
+                return json.load(file)
+        except Exception as e:
+            print(f"Error loading {FILENAME}: {e}")
+            print("Starting with empty inventory.\n")
+            return {}
+    else:
+        print(f"{FILENAME} not found.")
+        print("Starting with empty inventory.\n")
+        return {
+            "P001": {"name": "Laptop", "price": 1200.00, "stock": 15},
+            "P002": {"name": "Mouse", "price": 25.50, "stock": 40},
+            "P003": {"name": "Keyboard", "price": 45.00, "stock": 25},
+        }
 
 
 def display_all(inventory):
@@ -46,16 +60,55 @@ def add_product(inventory):
     print("Product added successfully!\n")
 
 
+def update_stock(inventory):
+    """Update stock quantity of an existing product."""
+    print("\nUpdate Stock")
+    item_id = input("Enter Product ID: ").strip()
+
+    if item_id in inventory:
+        print("\nProduct Found:")
+        print(f"Name: {inventory[item_id]['name']}")
+        print(f"Current Stock: {inventory[item_id]['stock']}\n")
+
+        try:
+            new_stock = int(input("New Stock Quantity: "))
+            inventory[item_id]["stock"] = new_stock
+            print("Stock updated successfully!\n")
+        except ValueError:
+            print("Invalid input! Stock not updated.\n")
+    else:
+        print("Product not found.\n")
+
+
+def search_product(inventory):
+    """Search and display details of a product by ID."""
+    print("\nSearch Product")
+    item_id = input("Enter Product ID: ").strip()
+
+    if item_id in inventory:
+        print("\nProduct Found")
+        print("-" * 45)
+        print(f"ID: {item_id}")
+        print(f"Name: {inventory[item_id]['name']}")
+        print(f"Price: ${inventory[item_id]['price']:.2f}")
+        print(f"Stock: {inventory[item_id]['stock']}")
+        print("-" * 45 + "\n")
+    else:
+        print("\nProduct not found.\n")
+
+
 def main():
     print("INVENTORY MANAGEMENT SYSTEM")
-    # Phase A: Starting with initial dictionary structure
-    inventory = init_inventory()
+    # Phase B: Load inventory using load_inventory()
+    inventory = load_inventory()
 
     while True:
         print("MENU")
         print("1. Display All Products")
         print("2. Add Product")
-        print("3. Exit")
+        print("3. Update Stock")
+        print("4. Search Product")
+        print("5. Exit")
 
         choice = input("Enter option: ").strip()
 
@@ -64,6 +117,10 @@ def main():
         elif choice == "2":
             add_product(inventory)
         elif choice == "3":
+            update_stock(inventory)
+        elif choice == "4":
+            search_product(inventory)
+        elif choice == "5":
             print("Exiting program.")
             break
         else:
