@@ -26,6 +26,20 @@ def load_inventory():
         }
 
 
+def save_inventory(inventory, auto_exit=False):
+    """Save the current inventory dictionary to inventory.json."""
+    if auto_exit:
+        print("Saving inventory before exit...")
+    else:
+        print("Saving inventory...")
+    try:
+        with open(FILENAME, "w") as file:
+            json.dump(inventory, file, indent=4)
+        print(f"Inventory saved successfully to {FILENAME}.\n")
+    except Exception as e:
+        print(f"Error saving inventory: {e}\n")
+
+
 def display_all(inventory):
     """Display all products in the current inventory."""
     print("\nCurrent Inventory")
@@ -99,7 +113,6 @@ def search_product(inventory):
 
 def main():
     print("INVENTORY MANAGEMENT SYSTEM")
-    # Phase B: Load inventory using load_inventory()
     inventory = load_inventory()
 
     while True:
@@ -108,7 +121,8 @@ def main():
         print("2. Add Product")
         print("3. Update Stock")
         print("4. Search Product")
-        print("5. Exit")
+        print("5. Save Inventory")
+        print("6. Exit")
 
         choice = input("Enter option: ").strip()
 
@@ -121,7 +135,11 @@ def main():
         elif choice == "4":
             search_product(inventory)
         elif choice == "5":
-            print("Exiting program.")
+            save_inventory(inventory)
+        elif choice == "6":
+            save_inventory(inventory, auto_exit=True)
+            print("Thank you for using Inventory Management System.")
+            print("Program terminated.")
             break
         else:
             print("Invalid option!\n")
