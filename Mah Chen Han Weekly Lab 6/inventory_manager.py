@@ -3,51 +3,42 @@ import os
 
 FILENAME = "inventory.json"
 
-
+# 1. PRODUCT CLASS (Single Responsibility: Manage single product entity state)
 class Product:
     """
     Represents and manages an individual product in the inventory.
-    Enforces Encapsulation (Section 2.4) and the Single Responsibility Principle (SRP).
+    Demonstrates Encapsulation (Section 2.4) and Single Responsibility Principle (Section 2.5).
     """
 
     def __init__(self, product_id: str, name: str, price: float, stock: int):
-        """Initializer (constructor) setting private/protected attributes."""
-        # Using leading underscore convention (_attribute) to signal private state
+        """Initializer setting protected instance attributes."""
         self._product_id = str(product_id)
         self.name = name
         self._price = float(price)
         self._stock = int(stock)
 
-    # --- Encapsulated Properties (Read-Only Accessors) ---
+    # --- Properties (Getters) ---
     @property
     def product_id(self) -> str:
-        """Read-only access to product_id."""
         return self._product_id
 
     @property
     def price(self) -> float:
-        """Read-only access to price."""
         return self._price
 
     @property
     def stock(self) -> int:
-        """Read-only access to stock quantity."""
         return self._stock
 
-    # --- Encapsulated Public Methods ---
+    # --- Public Methods ---
     def update_stock(self, new_stock: int) -> None:
-        """
-        Encapsulation in Action:
-        Controls how stock is updated from outside the class.
-        Validates input before modifying internal self._stock state.
-        """
+        """Updates internal stock state after input validation."""
         if new_stock < 0:
             raise ValueError("Stock quantity cannot be negative!")
-        
         self._stock = int(new_stock)
 
     def display_information(self) -> None:
-        """Displays formatted information for a single product."""
+        """Displays formatted single product information."""
         print("-" * 45)
         print(f"ID: {self._product_id}")
         print(f"Name: {self.name}")
@@ -55,9 +46,9 @@ class Product:
         print(f"Stock: {self._stock}")
         print("-" * 45)
 
-    # --- Serialization Helper Methods ---
+    # --- Serialization Helpers ---
     def to_dict(self) -> dict:
-        """Converts Product instance attributes into a dictionary for JSON saving."""
+        """Converts Product instance attributes into a dictionary representation."""
         return {
             "name": self.name,
             "price": self._price,
@@ -66,7 +57,7 @@ class Product:
 
     @classmethod
     def from_dict(cls, product_id: str, data: dict):
-        """Instantiates a Product object directly from dictionary data."""
+        """Instantiates a Product object from serialized dictionary data."""
         return cls(
             product_id=product_id,
             name=data["name"],
@@ -75,8 +66,11 @@ class Product:
         )
 
 
+# ============================================================================
+# 2. PERSISTENCE & SYSTEM FUNCTIONS (To be encapsulated into Inventory in 2.6)
+# ============================================================================
 def load_inventory():
-    """Check whether inventory.json exists and load it as Product objects."""
+    """Handles JSON file loading."""
     if os.path.exists(FILENAME):
         try:
             with open(FILENAME, "r") as file:
@@ -98,7 +92,7 @@ def load_inventory():
 
 
 def save_inventory(inventory, auto_exit=False):
-    """Save the current inventory dictionary to inventory.json."""
+    """Handles JSON file saving."""
     if auto_exit:
         print("Saving inventory before exit...")
     else:
@@ -115,7 +109,7 @@ def save_inventory(inventory, auto_exit=False):
 
 
 def display_all(inventory):
-    """Display all products in the current inventory."""
+    """Prints listing of all current products."""
     print("\nCurrent Inventory")
     if not inventory:
         print("No items in inventory.\n")
@@ -129,7 +123,7 @@ def display_all(inventory):
 
 
 def add_product(inventory):
-    """Add a new product object to the inventory dictionary via user input."""
+    """Gathers user input to add a new product."""
     print("\nAdd New Product")
     item_id = input("Product ID: ").strip()
 
@@ -150,7 +144,7 @@ def add_product(inventory):
 
 
 def update_stock(inventory):
-    """Update stock quantity safely using Product's encapsulated update_stock method."""
+    """Gathers user input to update product stock."""
     print("\nUpdate Stock")
     item_id = input("Enter Product ID: ").strip()
 
@@ -162,7 +156,6 @@ def update_stock(inventory):
 
         try:
             new_stock = int(input("New Stock Quantity: "))
-            # Enforces Encapsulation: Modifies internal state via class method
             product.update_stock(new_stock)
             print("Stock updated successfully!\n")
         except ValueError as e:
@@ -172,7 +165,7 @@ def update_stock(inventory):
 
 
 def search_product(inventory):
-    """Search and display details of a product by ID."""
+    """Searches for a product ID and delegates display to the Product object."""
     print("\nSearch Product")
     item_id = input("Enter Product ID: ").strip()
 
@@ -184,6 +177,9 @@ def search_product(inventory):
         print("\nProduct not found.\n")
 
 
+# ============================================================================
+# 3. MAIN CLI DRIVER
+# ============================================================================
 def main():
     print("INVENTORY MANAGEMENT SYSTEM")
     inventory = load_inventory()
