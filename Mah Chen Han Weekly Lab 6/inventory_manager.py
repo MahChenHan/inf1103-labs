@@ -4,11 +4,11 @@ import os
 FILENAME = "inventory.json"
 
 # 1. PRODUCT CLASS
-# Single Responsibility: Represent and manage individual product data & state
+# Responsibility: Stores single product information & manages its own state
 class Product:
     """
-    Represents an individual product.
-    Enforces encapsulation through protected attributes (_attribute).
+    Represents and manages an individual product entity.
+    Encapsulates private state attributes and safe mutation methods.
     """
 
     def __init__(self, product_id: str, name: str, price: float, stock: int):
@@ -17,7 +17,7 @@ class Product:
         self._price = float(price)
         self._stock = int(stock)
 
-    # --- Properties (Read-Only Getters) ---
+    # --- Read-Only Getters ---
     @property
     def product_id(self) -> str:
         return self._product_id
@@ -30,15 +30,15 @@ class Product:
     def stock(self) -> int:
         return self._stock
 
-    # --- Public Encapsulated Methods ---
+    # --- State Mutation ---
     def update_stock(self, new_stock: int) -> None:
-        """Safely modifies internal stock state after input validation."""
+        """Modifies internal stock level after validating non-negative constraints."""
         if new_stock < 0:
             raise ValueError("Stock quantity cannot be negative!")
         self._stock = int(new_stock)
 
     def display_information(self) -> None:
-        """Displays formatted single product details."""
+        """Formats and displays single product information."""
         print("-" * 45)
         print(f"ID: {self._product_id}")
         print(f"Name: {self.name}")
@@ -46,9 +46,9 @@ class Product:
         print(f"Stock: {self._stock}")
         print("-" * 45)
 
-    # --- Serialization Helpers ---
+    # --- Serialization Protocols ---
     def to_dict(self) -> dict:
-        """Converts Product instance attributes into a dictionary for JSON writing."""
+        """Converts Product instance attributes into a dictionary for JSON output."""
         return {
             "name": self.name,
             "price": self._price,
@@ -65,14 +65,11 @@ class Product:
             stock=data["stock"],
         )
 
-
-# ============================================================================
 # 2. INVENTORY CLASS
-# Single Responsibility: Manage collection of Product objects and JSON storage
-# ============================================================================
+# Responsibility: Stores product collection & manages JSON disk persistence
 class Inventory:
     """
-    Manages a collection of Product objects and file I/O operations.
+    Manages the collection of Product instances and disk persistence operations.
     """
 
     def __init__(self, filename: str = FILENAME):
@@ -81,7 +78,7 @@ class Inventory:
         self.load_inventory()
 
     def load_inventory(self) -> None:
-        """Check whether JSON file exists and load Product instances."""
+        """Loads inventory data from disk and instantiates Product objects."""
         if os.path.exists(self.filename):
             try:
                 with open(self.filename, "r") as file:
@@ -102,7 +99,7 @@ class Inventory:
             self.products = {}
 
     def save_inventory(self, auto_exit: bool = False) -> None:
-        """Serializes Product instances and writes to JSON file."""
+        """Serializes Product instances and writes back to JSON storage."""
         if auto_exit:
             print("Saving inventory before exit...")
         else:
@@ -119,7 +116,7 @@ class Inventory:
             print(f"Error saving inventory: {e}\n")
 
     def add_product(self, product: Product) -> bool:
-        """Adds a new Product object if ID does not already exist."""
+        """Adds a new Product object if the product_id is unique."""
         if product.product_id in self.products:
             print("Error: Product ID already exists!\n")
             return False
@@ -128,11 +125,11 @@ class Inventory:
         return True
 
     def get_product(self, product_id: str) -> Product | None:
-        """Retrieves a Product object by ID, or None if missing."""
+        """Retrieves a Product object by ID."""
         return self.products.get(product_id)
 
     def update_product_stock(self, product_id: str, new_stock: int) -> bool:
-        """Finds product and updates stock using Product's encapsulated method."""
+        """Delegates stock update to the matching Product instance."""
         product = self.get_product(product_id)
         if product:
             try:
@@ -147,7 +144,7 @@ class Inventory:
             return False
 
     def display_all(self) -> None:
-        """Displays all products in current inventory."""
+        """Prints a summary listing of all stored products."""
         print("\nCurrent Inventory")
         if not self.products:
             print("No items in inventory.\n")
@@ -160,9 +157,9 @@ class Inventory:
             )
         print()
 
-# 3. INTERACTIVE CLI PROMPT HELPERS
-def prompt_add_product(inventory: Inventory):
-    """Gathers user input to construct and add a new Product object."""
+# Responsibility: Handles user prompts, displays menu, routes requests
+def prompt_add_product(inventory: Inventory) -> None:
+    """Prompts for input and adds a Product to Inventory."""
     print("\nAdd New Product")
     item_id = input("Product ID: ").strip()
 
@@ -182,8 +179,8 @@ def prompt_add_product(inventory: Inventory):
     inventory.add_product(new_product)
 
 
-def prompt_update_stock(inventory: Inventory):
-    """Gathers user input to update stock for an existing product."""
+def prompt_update_stock(inventory: Inventory) -> None:
+    """Prompts for input and updates stock on Inventory."""
     print("\nUpdate Stock")
     item_id = input("Enter Product ID: ").strip()
     product = inventory.get_product(item_id)
@@ -202,8 +199,8 @@ def prompt_update_stock(inventory: Inventory):
         print("Product not found.\n")
 
 
-def prompt_search_product(inventory: Inventory):
-    """Gathers user input to search and display single product details."""
+def prompt_search_product(inventory: Inventory) -> None:
+    """Prompts for input and displays matching Product details."""
     print("\nSearch Product")
     item_id = input("Enter Product ID: ").strip()
     product = inventory.get_product(item_id)
@@ -216,9 +213,6 @@ def prompt_search_product(inventory: Inventory):
         print("\nProduct not found.\n")
 
 
-# ============================================================================
-# 4. MAIN CLI DRIVER
-# ============================================================================
 def main():
     print("INVENTORY MANAGEMENT SYSTEM")
     inventory = Inventory(FILENAME)
