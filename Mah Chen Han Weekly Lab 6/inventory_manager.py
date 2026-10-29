@@ -3,11 +3,11 @@ import os
 
 FILENAME = "inventory.json"
 
-# 1. PRODUCT CLASS (Single Responsibility: Manage single product entity state)
+# 1. PRODUCT CLASS (SRP: Manages state and details of a single product)
 class Product:
     """
     Represents and manages an individual product in the inventory.
-    Demonstrates Encapsulation (Section 2.4) and Single Responsibility Principle (Section 2.5).
+    Demonstrates Encapsulation and Single Responsibility Principle (SRP).
     """
 
     def __init__(self, product_id: str, name: str, price: float, stock: int):
@@ -65,69 +65,104 @@ class Product:
             stock=data["stock"],
         )
 
+# 2. INVENTORY CLASS (SRP: Manages collection of Product objects and file I/O)
+class Inventory:
+    """
+    Manages a collection of Product objects and handles disk persistence.
+    """
 
-# ============================================================================
-# 2. PERSISTENCE & SYSTEM FUNCTIONS (To be encapsulated into Inventory in 2.6)
-# ============================================================================
-def load_inventory():
-    """Handles JSON file loading."""
-    if os.path.exists(FILENAME):
-        try:
-            with open(FILENAME, "r") as file:
-                data = json.load(file)
-                print(f"{FILENAME} found.")
+    def __init__(self, filename: str = FILENAME):
+        self.filename = filename
+        self.products: dict[str, Product] = {}
+        self.load_inventory()
+
+    def load_inventory(self) -> None:
+        """Loads product records from JSON file and converts them to Product instances."""
+        if os.path.exists(self.filename):
+            try:
+                with open(self.filename, "r") as file:
+                    data = json.load(file)
+                    self.products = {
+                        item_id: Product.from_dict(item_id, details)
+                        for item_id, details in data.items()
+                    }
+                print(f"{self.filename} found.")
                 print("Inventory loaded successfully.\n")
-                return {
-                    item_id: Product.from_dict(item_id, details)
-                    for item_id, details in data.items()
-                }
-        except Exception as e:
-            print(f"Error loading {FILENAME}: {e}")
+            except Exception as e:
+                print(f"Error loading {self.filename}: {e}")
+                print("Starting with empty inventory.\n")
+                self.products = {}
+        else:
+            print(f"{self.filename} not found.")
             print("Starting with empty inventory.\n")
-            return {}
-    else:
-        print(f"{FILENAME} not found.")
-        print("Starting with empty inventory.\n")
-        return {}
+            self.products = {}
 
+    def save_inventory(self, auto_exit: bool = False) -> None:
+        """Serializes Product instances to dictionary format and writes to JSON."""
+        if auto_exit:
+            print("Saving inventory before exit...")
+        else:
+            print("Saving inventory...")
 
-def save_inventory(inventory, auto_exit=False):
-    """Handles JSON file saving."""
-    if auto_exit:
-        print("Saving inventory before exit...")
-    else:
-        print("Saving inventory...")
-    try:
-        serialized_data = {
-            item_id: product.to_dict() for item_id, product in inventory.items()
-        }
-        with open(FILENAME, "w") as file:
-            json.dump(serialized_data, file, indent=4)
-        print(f"Inventory saved successfully to {FILENAME}.\n")
-    except Exception as e:
-        print(f"Error saving inventory: {e}\n")
+        try:
+            serialized_data = {
+                item_id: prod.to_dict() for item_id, prod in self.products.items()
+            }
+            with open(self.filename, "w") as file:
+                json.dump(serialized_data, file, indent=4)
+            print(f"Inventory saved successfully to {self.filename}.\n")
+        except Exception as e:
+            print(f"Error saving inventory: {e}\n")
 
+    def add_product(self, product: Product) -> bool:
+        """Adds a Product instance to the collection if ID is unique."""
+        if product.product_id in self.products:
+            print("Error: Product ID already exists!\n")
+            return False
+        self.products[product.product_id] = product
+        print("Product added successfully!\n")
+        return True
 
-def display_all(inventory):
-    """Prints listing of all current products."""
-    print("\nCurrent Inventory")
-    if not inventory:
-        print("No items in inventory.\n")
-        return
-    for item_id, product in inventory.items():
-        print(
-            f"ID: {product.product_id} | Name: {product.name} | "
-            f"Price: ${product.price:.2f} | Stock: {product.stock}"
-        )
-    print()
+    def get_product(self, product_id: str) -> Product | None:
+        """Retrieves a Product object by ID."""
+        return self.products.get(product_id)
 
+    def update_product_stock(self, product_id: str, new_stock: int) -> bool:
+        """Finds product and updates its stock via Product's encapsulated method."""
+        product = self.get_product(product_id)
+        if product:
+            try:
+                product.update_stock(new_stock)
+                print("Stock updated successfully!\n")
+                return True
+            except ValueError as e:
+                print(f"Invalid input! {e}\n")
+                return False
+        else:
+            print("Product not found.\n")
+            return False
 
-def add_product(inventory):
-    """Gathers user input to add a new product."""
+    def display_all(self) -> None:
+        """Displays formatted listing of all products in inventory."""
+        print("\nCurrent Inventory")
+        if not self.products:
+            print("No items in inventory.\n")
+            return
+
+        for product in self.products.values():
+            print(
+                f"ID: {product.product_id} | Name: {product.name} | "
+                f"Price: ${product.price:.2f} | Stock: {product.stock}"
+            )
+        print()
+
+# 3. INTERACTIVE HELPER FUNCTIONS (Gather CLI input and call Inventory)
+def prompt_add_product(inventory: Inventory):
+    """Gathers user input to construct and add a new Product object."""
     print("\nAdd New Product")
     item_id = input("Product ID: ").strip()
 
-    if item_id in inventory:
+    if inventory.get_product(item_id):
         print("Error: Product ID already exists!\n")
         return
 
@@ -139,50 +174,50 @@ def add_product(inventory):
         print("Invalid price or stock quantity! Product not added.\n")
         return
 
-    inventory[item_id] = Product(item_id, name, price, stock)
-    print("Product added successfully!\n")
+    new_product = Product(item_id, name, price, stock)
+    inventory.add_product(new_product)
 
 
-def update_stock(inventory):
-    """Gathers user input to update product stock."""
+def prompt_update_stock(inventory: Inventory):
+    """Gathers user input to update stock for an existing product."""
     print("\nUpdate Stock")
     item_id = input("Enter Product ID: ").strip()
+    product = inventory.get_product(item_id)
 
-    if item_id in inventory:
-        product = inventory[item_id]
+    if product:
         print("\nProduct Found:")
         print(f"Name: {product.name}")
         print(f"Current Stock: {product.stock}\n")
 
         try:
             new_stock = int(input("New Stock Quantity: "))
-            product.update_stock(new_stock)
-            print("Stock updated successfully!\n")
-        except ValueError as e:
-            print(f"Invalid input! {e}\n")
+            inventory.update_product_stock(item_id, new_stock)
+        except ValueError:
+            print("Invalid input! Stock not updated.\n")
     else:
         print("Product not found.\n")
 
 
-def search_product(inventory):
-    """Searches for a product ID and delegates display to the Product object."""
+def prompt_search_product(inventory: Inventory):
+    """Gathers user input to search for a product and trigger display_information."""
     print("\nSearch Product")
     item_id = input("Enter Product ID: ").strip()
+    product = inventory.get_product(item_id)
 
-    if item_id in inventory:
+    if product:
         print("\nProduct Found")
-        inventory[item_id].display_information()
+        product.display_information()
         print()
     else:
         print("\nProduct not found.\n")
 
 
 # ============================================================================
-# 3. MAIN CLI DRIVER
+# 4. MAIN CLI DRIVER
 # ============================================================================
 def main():
     print("INVENTORY MANAGEMENT SYSTEM")
-    inventory = load_inventory()
+    inventory = Inventory(FILENAME)
 
     while True:
         print("MENU")
@@ -196,17 +231,17 @@ def main():
         choice = input("Enter option: ").strip()
 
         if choice == "1":
-            display_all(inventory)
+            inventory.display_all()
         elif choice == "2":
-            add_product(inventory)
+            prompt_add_product(inventory)
         elif choice == "3":
-            update_stock(inventory)
+            prompt_update_stock(inventory)
         elif choice == "4":
-            search_product(inventory)
+            prompt_search_product(inventory)
         elif choice == "5":
-            save_inventory(inventory)
+            inventory.save_inventory()
         elif choice == "6":
-            save_inventory(inventory, auto_exit=True)
+            inventory.save_inventory(auto_exit=True)
             print("Thank you for using Inventory Management System.")
             print("Program terminated.")
             break
