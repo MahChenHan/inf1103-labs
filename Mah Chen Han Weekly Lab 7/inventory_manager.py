@@ -5,10 +5,10 @@ FILENAME = "inventory.json"
 
 
 # ============================================================================
-# BASE CLASS (Section 1.1)
+# BASE CLASS (Parent)
 # ============================================================================
 class Product:
-    """Base Product class containing common product details."""
+    """Base Product class containing common product attributes and methods."""
 
     def __init__(self, product_id: str, name: str, price: float, stock: int):
         self._product_id = str(product_id)
@@ -29,13 +29,13 @@ class Product:
         return self._stock
 
     def update_stock(self, new_stock: int) -> None:
-        """Updates internal stock quantity with input validation."""
+        """Updates internal stock quantity with validation."""
         if new_stock < 0:
             raise ValueError("Stock quantity cannot be negative!")
         self._stock = int(new_stock)
 
     def display_information(self) -> None:
-        """Displays base product details."""
+        """Base implementation: Displays common product details."""
         print("-" * 45)
         print(f"ID: {self._product_id}")
         print(f"Name: {self.name}")
@@ -44,13 +44,10 @@ class Product:
 
 
 # ============================================================================
-# PHYSICAL PRODUCT SUBCLASS (Section 1.2)
+# PHYSICAL PRODUCT SUBCLASS (Child)
 # ============================================================================
 class PhysicalProduct(Product):
-    """
-    Represents a physical item inheriting from Product.
-    Introduces weight as a new attribute.
-    """
+    """Represents a physical product with a weight attribute."""
 
     def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float):
         super().__init__(product_id, name, price, stock)
@@ -61,25 +58,23 @@ class PhysicalProduct(Product):
         return self._weight
 
     def display_information(self) -> None:
-        """Displays existing product information alongside its weight."""
-        super().display_information()
+        """
+        Section 2.1 Overriding:
+        Reuses base implementation via super(), then appends weight.
+        """
+        super().display_information()  # Call parent display_information()
         print(f"Weight: {self._weight:.2f} kg")
         print("-" * 45)
 
 
 # ============================================================================
-# DIGITAL PRODUCT SUBCLASS (Section 1.3)
+# DIGITAL PRODUCT SUBCLASS (Child)
 # ============================================================================
 class DigitalProduct(Product):
-    """
-    Represents a digital item inheriting from Product.
-    Introduces download size as a new attribute.
-    """
+    """Represents a digital product with a download_size attribute."""
 
     def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float):
-        # Reuse existing Product constructor using super()
         super().__init__(product_id, name, price, stock)
-        # Initialise additional download size attribute (in MB)
         self._download_size = float(download_size)
 
     @property
@@ -87,20 +82,28 @@ class DigitalProduct(Product):
         return self._download_size
 
     def display_information(self) -> None:
-        """Displays existing product information alongside its download size."""
-        super().display_information()
+        """
+        Section 2.1 Overriding:
+        Reuses base implementation via super(), then appends download size.
+        """
+        super().display_information()  # Call parent display_information()
         print(f"Download Size: {self._download_size:.2f} MB")
         print("-" * 45)
 
 
 # ============================================================================
-# TEST EXECUTION FOR SECTION 1.2 & 1.3
+# SECTION 2.2 TESTING
 # ============================================================================
 if __name__ == "__main__":
-    print("Testing PhysicalProduct Creation:")
-    physical_item = PhysicalProduct("P001", "Gaming Mouse", 59.99, 20, 0.25)
+    print("=== Testing Section 2: Method Overriding ===")
+    
+    # 1. Create one physical product and one digital product
+    physical_item = PhysicalProduct("P101", "Mechanical Keyboard", 129.99, 15, 1.20)
+    digital_item = DigitalProduct("D101", "Python Programming eBook", 19.99, 50, 15.40)
+
+    # 2. Call display_information() on each to verify combined output
+    print("\n[Physical Product Details]")
     physical_item.display_information()
 
-    print("\nTesting DigitalProduct Creation:")
-    digital_item = DigitalProduct("D001", "Antivirus Software", 29.99, 100, 450.50)
+    print("\n[Digital Product Details]")
     digital_item.display_information()
