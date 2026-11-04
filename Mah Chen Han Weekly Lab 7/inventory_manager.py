@@ -6,28 +6,22 @@ FILENAME = "inventory.json"
 
 
 # ============================================================================
-# 4.1 CAN BE SHIPPED INTERFACE (Section 4.1)
+# 1. INTERFACE (Section 4)
 # ============================================================================
 class CanBeShipped(ABC):
-    """
-    Interface specifying the shipping cost capability.
-    Classes implementing this contract must provide calculate_shipping_cost().
-    """
+    """Interface specifying shipping cost calculation contract."""
 
     @abstractmethod
     def calculate_shipping_cost(self) -> float:
-        """Calculates and returns shipping cost based on product properties."""
+        """Calculates and returns shipping cost based on product characteristics."""
         pass
 
 
 # ============================================================================
-# 3.1 ABSTRACT BASE CLASS (Section 3.1)
+# 2. ABSTRACT BASE CLASS (Section 1 & 3)
 # ============================================================================
 class Product(ABC):
-    """
-    Abstract base class for all products in the system.
-    Cannot be instantiated directly.
-    """
+    """Abstract base class for all products in the system."""
 
     def __init__(self, product_id: str, name: str, price: float, stock: int):
         self._product_id = str(product_id)
@@ -48,13 +42,13 @@ class Product(ABC):
         return self._stock
 
     def update_stock(self, new_stock: int) -> None:
-        """Updates internal stock quantity with validation."""
+        """Updates internal stock state after input validation."""
         if new_stock < 0:
             raise ValueError("Stock quantity cannot be negative!")
         self._stock = int(new_stock)
 
     def display_information(self) -> None:
-        """Base implementation: Displays common product details."""
+        """Displays common product information."""
         print("-" * 45)
         print(f"ID: {self._product_id}")
         print(f"Name: {self.name}")
@@ -63,18 +57,20 @@ class Product(ABC):
 
     @abstractmethod
     def get_fulfilment_info(self) -> str:
-        """Abstract method enforcing fulfilment implementation in subclasses."""
+        """Abstract method enforcing fulfilment details implementation."""
+        pass
+
+    @abstractmethod
+    def to_dict(self) -> dict:
+        """Abstract method converting product instance to a dictionary for JSON persistence."""
         pass
 
 
 # ============================================================================
-# 4.2 PHYSICAL PRODUCT SUBCLASS (Inherits Product, Realises CanBeShipped)
+# 3. CONCRETE SUBCLASSES (Section 1, 2, 3 & 4)
 # ============================================================================
 class PhysicalProduct(Product, CanBeShipped):
-    """
-    Represents a physical product requiring physical shipping.
-    Implements CanBeShipped interface.
-    """
+    """Represents a physical item requiring shipping and tracking weight."""
 
     def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float):
         super().__init__(product_id, name, price, stock)
@@ -88,27 +84,27 @@ class PhysicalProduct(Product, CanBeShipped):
         super().display_information()
         print(f"Weight: {self._weight:.2f} kg")
         print(f"Fulfilment: {self.get_fulfilment_info()}")
-        # Display shipping cost calculated via CanBeShipped interface
         print(f"Est. Shipping Cost: ${self.calculate_shipping_cost():.2f}")
         print("-" * 45)
 
     def get_fulfilment_info(self) -> str:
-        return "Requires physical shipping."
+        return "Requires physical warehouse dispatch and courier shipping."
 
-    # Section 4.2: Interface implementation
     def calculate_shipping_cost(self) -> float:
-        """Calculates shipping cost based on product weight ($5.00 base + $2.50 per kg)."""
         return 5.00 + (self._weight * 2.50)
 
+    def to_dict(self) -> dict:
+        return {
+            "type": "physical",
+            "name": self.name,
+            "price": self._price,
+            "stock": self._stock,
+            "weight": self._weight,
+        }
 
-# ============================================================================
-# 3.2 DIGITAL PRODUCT SUBCLASS (Does NOT implement CanBeShipped)
-# ============================================================================
+
 class DigitalProduct(Product):
-    """
-    Represents a digital product delivered online.
-    Does not implement CanBeShipped interface.
-    """
+    """Represents a downloadable digital item with file size metrics."""
 
     def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float):
         super().__init__(product_id, name, price, stock)
@@ -125,27 +121,241 @@ class DigitalProduct(Product):
         print("-" * 45)
 
     def get_fulfilment_info(self) -> str:
-        return "Delivered digitally via download link."
+        return "Instant digital delivery via download link upon payment."
+
+    def to_dict(self) -> dict:
+        return {
+            "type": "digital",
+            "name": self.name,
+            "price": self._price,
+            "stock": self._stock,
+            "download_size": self._download_size,
+        }
+
+
+def product_from_dict(product_id: str, data: dict) -> Product:
+    """Factory function to deserialize JSON records into specific Product subclasses."""
+    product_type = data.get("type", "physical")
+    if product_type == "physical":
+        return PhysicalProduct(
+            product_id=product_id,
+            name=data["name"],
+            price=data["price"],
+            stock=data["stock"],
+            weight=data.get("weight", 0.0),
+        )
+    elif product_type == "digital":
+        return DigitalProduct(
+            product_id=product_id,
+            name=data["name"],
+            price=data["price"],
+            stock=data["stock"],
+            download_size=data.get("download_size", 0.0),
+        )
+    else:
+        raise ValueError(f"Unknown product type: {product_type}")
 
 
 # ============================================================================
-# SECTION 4 TESTING
+# 4. INVENTORY CLASS (Section 5)
 # ============================================================================
+class Inventory:
+    """Manages Product instances and file storage."""
+
+    def __init__(self, filename: str = FILENAME):
+        self.filename = filename
+        self.products: dict[str, Product] = {}
+        self.load_inventory()
+
+    def load_inventory(self) -> None:
+        """Loads product records from JSON file and instantiates subclasses."""
+        if os.path.exists(self.filename):
+            try:
+                with open(self.filename, "r") as file:
+                    data = json.load(file)
+                    self.products = {
+                        item_id: product_from_dict(item_id, details)
+                        for item_id, details in data.items()
+                    }
+                print(f"{self.filename} found.")
+                print("Inventory loaded successfully.\n")
+            except Exception as e:
+                print(f"Error loading {self.filename}: {e}")
+                print("Starting with empty inventory.\n")
+                self.products = {}
+        else:
+            print(f"{self.filename} not found.")
+            print("Starting with empty inventory.\n")
+            self.products = {}
+
+    def save_inventory(self, auto_exit: bool = False) -> None:
+        """Serializes Product instances to dictionary format and writes to JSON."""
+        if auto_exit:
+            print("Saving inventory before exit...")
+        else:
+            print("Saving inventory...")
+
+        try:
+            serialized_data = {
+                item_id: prod.to_dict() for item_id, prod in self.products.items()
+            }
+            with open(self.filename, "w") as file:
+                json.dump(serialized_data, file, indent=4)
+            print(f"Inventory saved successfully to {self.filename}.\n")
+        except Exception as e:
+            print(f"Error saving inventory: {e}\n")
+
+    def add_product(self, product: Product) -> bool:
+        """Adds a Product instance to the inventory if unique."""
+        if product.product_id in self.products:
+            print("Error: Product ID already exists!\n")
+            return False
+        self.products[product.product_id] = product
+        print("Product added successfully!\n")
+        return True
+
+    def get_product(self, product_id: str) -> Product | None:
+        """Retrieves a Product object by ID."""
+        return self.products.get(product_id)
+
+    def update_product_stock(self, product_id: str, new_stock: int) -> bool:
+        """Delegates stock update to the target Product object."""
+        product = self.get_product(product_id)
+        if product:
+            try:
+                product.update_stock(new_stock)
+                print("Stock updated successfully!\n")
+                return True
+            except ValueError as e:
+                print(f"Invalid input! {e}\n")
+                return False
+        else:
+            print("Product not found.\n")
+            return False
+
+    def display_all(self) -> None:
+        """Displays summary of all stored products."""
+        print("\nCurrent Inventory")
+        if not self.products:
+            print("No items in inventory.\n")
+            return
+
+        for product in self.products.values():
+            ptype = "Physical" if isinstance(product, PhysicalProduct) else "Digital"
+            print(
+                f"[{ptype}] ID: {product.product_id} | Name: {product.name} | "
+                f"Price: ${product.price:.2f} | Stock: {product.stock}"
+            )
+        print()
+
+
+# ============================================================================
+# 5. CLI INTERACTION HELPERS
+# ============================================================================
+def prompt_add_product(inventory: Inventory) -> None:
+    """Gathers user input to construct PhysicalProduct or DigitalProduct objects."""
+    print("\nAdd New Product")
+    print("Select Product Type:")
+    print("1. Physical Product")
+    print("2. Digital Product")
+    ptype_choice = input("Enter choice (1/2): ").strip()
+
+    if ptype_choice not in ["1", "2"]:
+        print("Invalid product type option! Product not added.\n")
+        return
+
+    item_id = input("Product ID: ").strip()
+    if inventory.get_product(item_id):
+        print("Error: Product ID already exists!\n")
+        return
+
+    name = input("Product Name: ").strip()
+    try:
+        price = float(input("Price: "))
+        stock = int(input("Stock Quantity: "))
+
+        if ptype_choice == "1":
+            weight = float(input("Weight (kg): "))
+            new_product = PhysicalProduct(item_id, name, price, stock, weight)
+        else:
+            download_size = float(input("Download Size (MB): "))
+            new_product = DigitalProduct(item_id, name, price, stock, download_size)
+
+        inventory.add_product(new_product)
+    except ValueError:
+        print("Invalid numerical input! Product not added.\n")
+
+
+def prompt_update_stock(inventory: Inventory) -> None:
+    """Gathers input to update stock for a product."""
+    print("\nUpdate Stock")
+    item_id = input("Enter Product ID: ").strip()
+    product = inventory.get_product(item_id)
+
+    if product:
+        print("\nProduct Found:")
+        print(f"Name: {product.name}")
+        print(f"Current Stock: {product.stock}\n")
+
+        try:
+            new_stock = int(input("New Stock Quantity: "))
+            inventory.update_product_stock(item_id, new_stock)
+        except ValueError:
+            print("Invalid input! Stock not updated.\n")
+    else:
+        print("Product not found.\n")
+
+
+def prompt_search_product(inventory: Inventory) -> None:
+    """Searches for a product and triggers display_information()."""
+    print("\nSearch Product")
+    item_id = input("Enter Product ID: ").strip()
+    product = inventory.get_product(item_id)
+
+    if product:
+        print("\nProduct Found")
+        product.display_information()
+        print()
+    else:
+        print("\nProduct not found.\n")
+
+
+# ============================================================================
+# 6. MAIN CLI DRIVER
+# ============================================================================
+def main():
+    print("INVENTORY MANAGEMENT SYSTEM (LAB 7 - INTEGRATED)")
+    inventory = Inventory(FILENAME)
+
+    while True:
+        print("MENU")
+        print("1. Display All Products")
+        print("2. Add Product")
+        print("3. Update Stock")
+        print("4. Search Product")
+        print("5. Save Inventory")
+        print("6. Exit")
+
+        choice = input("Enter option: ").strip()
+
+        if choice == "1":
+            inventory.display_all()
+        elif choice == "2":
+            prompt_add_product(inventory)
+        elif choice == "3":
+            prompt_update_stock(inventory)
+        elif choice == "4":
+            prompt_search_product(inventory)
+        elif choice == "5":
+            inventory.save_inventory()
+        elif choice == "6":
+            inventory.save_inventory(auto_exit=True)
+            print("Thank you for using Inventory Management System.")
+            print("Program terminated.")
+            break
+        else:
+            print("Invalid option!\n")
+
+
 if __name__ == "__main__":
-    print("=== Testing Section 4: Interface Realisation ===")
-
-    # Create physical products with different weights
-    light_item = PhysicalProduct("P101", "USB Cable", 9.99, 50, 0.10)
-    heavy_item = PhysicalProduct("P102", "Desktop Computer", 1499.00, 5, 8.50)
-
-    # Create a digital product
-    digital_item = DigitalProduct("D101", "Design Software", 99.99, 100, 1200.0)
-
-    print("\n[Light Physical Product]")
-    light_item.display_information()
-
-    print("\n[Heavy Physical Product]")
-    heavy_item.display_information()
-
-    print("\n[Digital Product - No Shipping]")
-    digital_item.display_information()
+    main()
