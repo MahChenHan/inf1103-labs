@@ -4,8 +4,9 @@ import os
 FILENAME = "inventory.json"
 
 
-
-
+# ============================================================================
+# BASE CLASS (Section 1.1)
+# ============================================================================
 class Product:
     """Base Product class containing common product details."""
 
@@ -43,7 +44,7 @@ class Product:
 
 
 # ============================================================================
-# SUBCLASS (Section 1.2: PhysicalProduct)
+# PHYSICAL PRODUCT SUBCLASS (Section 1.2)
 # ============================================================================
 class PhysicalProduct(Product):
     """
@@ -52,9 +53,7 @@ class PhysicalProduct(Product):
     """
 
     def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float):
-        # Reuse existing Product constructor using super()
         super().__init__(product_id, name, price, stock)
-        # Initialise additional weight attribute
         self._weight = float(weight)
 
     @property
@@ -68,11 +67,40 @@ class PhysicalProduct(Product):
         print("-" * 45)
 
 
-# 1.2
+# ============================================================================
+# DIGITAL PRODUCT SUBCLASS (Section 1.3)
+# ============================================================================
+class DigitalProduct(Product):
+    """
+    Represents a digital item inheriting from Product.
+    Introduces download size as a new attribute.
+    """
+
+    def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float):
+        # Reuse existing Product constructor using super()
+        super().__init__(product_id, name, price, stock)
+        # Initialise additional download size attribute (in MB)
+        self._download_size = float(download_size)
+
+    @property
+    def download_size(self) -> float:
+        return self._download_size
+
+    def display_information(self) -> None:
+        """Displays existing product information alongside its download size."""
+        super().display_information()
+        print(f"Download Size: {self._download_size:.2f} MB")
+        print("-" * 45)
+
+
+# ============================================================================
+# TEST EXECUTION FOR SECTION 1.2 & 1.3
+# ============================================================================
 if __name__ == "__main__":
     print("Testing PhysicalProduct Creation:")
-    # Create a PhysicalProduct object from external execution code
-    item = PhysicalProduct("P001", "Gaming Mouse", 59.99, 20, 0.25)
-    
-    # Display product information
-    item.display_information()
+    physical_item = PhysicalProduct("P001", "Gaming Mouse", 59.99, 20, 0.25)
+    physical_item.display_information()
+
+    print("\nTesting DigitalProduct Creation:")
+    digital_item = DigitalProduct("D001", "Antivirus Software", 29.99, 100, 450.50)
+    digital_item.display_information()
