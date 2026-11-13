@@ -1,7 +1,7 @@
 """Lab 8 tests: association, aggregation, composition, LSP, polymorphism.
 Run with:  python test_lab8.py
 """
-from inventory_manager import (Supplier, PhysicalProduct, DigitalProduct, Inventory)
+from inventory_manager import (Supplier, PhysicalProduct, DigitalProduct, Inventory, Order)
 
 
 def header(title: str) -> None:
@@ -55,6 +55,36 @@ def test_aggregation() -> None:
     print(f"Same object now in B? {inventory_b.find_product('P200') is mouse}")
 
 
+# ---------------------------------------------------------------- Section 4
+def test_composition() -> None:
+    header("SECTION 4: COMPOSITION (Order <>-- OrderLine)")
+    supplier = Supplier("S003", "SoftWorld", "support@softworld.sg")
+    keyboard = PhysicalProduct("P300", "Keyboard", 89.9, 25, supplier, 0.9)
+    antivirus = DigitalProduct("D300", "Antivirus Licence", 49.0, 500, supplier, 250.0)
+
+    order1 = Order("O001")
+    order1.add_order_line(keyboard, 2)
+    order1.add_order_line(antivirus, 1)
+    order1.display_order()
+
+    order2 = Order("O002")
+    order2.add_order_line(keyboard, 1)   # same Product, different Order
+    order2.display_order()
+
+    line_a = order1.order_lines[0]
+    line_b = order2.order_lines[0]
+    print(f"\nSame OrderLine object?   {line_a is line_b}  "
+          f"(ids {id(line_a)} vs {id(line_b)})")
+    print(f"Same Product object?     {line_a.product is line_b.product}  "
+          f"(ids {id(line_a.product)} vs {id(line_b.product)})")
+
+    print("\nRemoving keyboard line from O001 via the Order:")
+    order1.remove_order_line("P300")
+    order1.display_order()
+    print(f"Keyboard product still exists: {keyboard.name}")
+
+
 if __name__ == "__main__":
     test_association()
     test_aggregation()
+    test_composition()
