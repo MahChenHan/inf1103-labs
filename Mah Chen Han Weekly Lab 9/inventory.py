@@ -1,5 +1,4 @@
 import json
-import os
 
 from product import Product
 from product_factory import ProductFactory
@@ -47,24 +46,26 @@ class Inventory:
 
     def load_inventory(self) -> None:
         """Loads product records from JSON file and instantiates subclasses."""
-        if self.filename and os.path.exists(self.filename):
+        try:
+            file = open(self.filename, "r")
+        except FileNotFoundError:
+            print(f"{self.filename} not found.")
+            print("Starting with empty inventory.\n")
+            self.products = []
+            return
+        with file:
             try:
-                with open(self.filename, "r") as file:
-                    data = json.load(file)
+                data = json.load(file)
                 self.products = [
                     product_from_dict(item_id, details, self.suppliers)
                     for item_id, details in data.items()
                 ]
                 print(f"{self.filename} found.")
                 print("Inventory loaded successfully.\n")
-            except Exception as e:
-                print(f"Error loading {self.filename}: {e}")
+            except (json.JSONDecodeError, KeyError, ValueError) as error:
+                print(f"Error loading {self.filename}: {error}")
                 print("Starting with empty inventory.\n")
                 self.products = []
-        else:
-            print(f"{self.filename} not found.")
-            print("Starting with empty inventory.\n")
-            self.products = []
 
     def save_inventory(self, auto_exit: bool = False) -> None:
         """Serializes Product instances to dictionary format and writes to JSON."""
@@ -76,8 +77,8 @@ class Inventory:
             with open(self.filename, "w") as file:
                 json.dump(serialized_data, file, indent=4)
             print(f"Inventory saved successfully to {self.filename}.\n")
-        except Exception as e:
-            print(f"Error saving inventory: {e}\n")
+        except OSError as error:
+            print(f"Error saving inventory: {error}\n")
 
     def add_product(self, product: Product) -> bool:
         """Adds an EXISTING Product object (created outside the Inventory)."""

@@ -1,7 +1,11 @@
 """Entry point: menu-driven CLI for the Inventory Management System."""
-from inventory import FILENAME, Inventory
+from input_helpers import get_non_negative_int, get_positive_float
+from inventory import DEFAULT_SUPPLIER, FILENAME, Inventory
 from product_factory import ProductFactory
+from product_loader import load_products
 from supplier import Supplier
+
+PRODUCTS_CSV = "products.csv"
 
 
 def prompt_supplier(inventory: Inventory) -> Supplier:
@@ -36,16 +40,13 @@ def prompt_add_product(inventory: Inventory) -> None:
 
     name = input("Product Name: ").strip()
     product_type = "physical" if ptype_choice == "1" else "digital"
-    try:
-        price = float(input("Price: "))
-        stock = int(input("Stock Quantity: "))
-        if product_type == "physical":
-            weight_or_size = float(input("Weight (kg): "))
-        else:
-            weight_or_size = float(input("Download Size (MB): "))
-    except ValueError:
-        print("Invalid numerical input! Product not added.\n")
-        return
+    # helpers keep asking until valid, so we never continue with bad data
+    price = get_positive_float("Price: ")
+    stock = get_non_negative_int("Stock Quantity: ")
+    if product_type == "physical":
+        weight_or_size = get_positive_float("Weight (kg): ")
+    else:
+        weight_or_size = get_positive_float("Download Size (MB): ")
 
     supplier = prompt_supplier(inventory)
     try:
@@ -67,11 +68,8 @@ def prompt_update_stock(inventory: Inventory) -> None:
     print("\nProduct Found:")
     print(f"Name: {product.name}")
     print(f"Current Stock: {product.stock}\n")
-    try:
-        new_stock = int(input("New Stock Quantity: "))
-        inventory.update_product_stock(item_id, new_stock)
-    except ValueError:
-        print("Invalid input! Stock not updated.\n")
+    new_stock = get_non_negative_int("New Stock Quantity: ")
+    inventory.update_product_stock(item_id, new_stock)
 
 
 def prompt_search_product(inventory: Inventory) -> None:
@@ -92,6 +90,13 @@ def prompt_remove_product(inventory: Inventory) -> None:
     inventory.remove_product(item_id)
 
 
+def prompt_load_csv(inventory: Inventory) -> None:
+    print("\nLoad Products from CSV")
+    path = input(f"CSV file path (Enter for {PRODUCTS_CSV}): ").strip()
+    load_products(path or PRODUCTS_CSV, inventory, DEFAULT_SUPPLIER)
+    print()
+
+
 def main() -> None:
     print("INVENTORY MANAGEMENT SYSTEM (LAB 9)")
     inventory = Inventory(FILENAME)
@@ -104,7 +109,8 @@ def main() -> None:
         print("4. Search Product")
         print("5. Remove Product")
         print("6. Save Inventory")
-        print("7. Exit")
+        print("7. Load Products from CSV")
+        print("8. Exit")
 
         choice = input("Enter option: ").strip()
 
@@ -121,6 +127,8 @@ def main() -> None:
         elif choice == "6":
             inventory.save_inventory()
         elif choice == "7":
+            prompt_load_csv(inventory)
+        elif choice == "8":
             inventory.save_inventory(auto_exit=True)
             print("Thank you for using Inventory Management System.")
             print("Program terminated.")
