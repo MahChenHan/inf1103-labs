@@ -202,45 +202,46 @@ def product_from_dict(product_id: str, data: dict,
 
 
 # ============================================================================
-# 5. INVENTORY CLASS
+# 5. INVENTORY (Lab 8 - Section 3: AGGREGATION)
 # ============================================================================
 class Inventory:
-    """Manages Product instances and file storage."""
+    """Groups Product objects. Does NOT create or own their lifecycle."""
 
-    def __init__(self, filename: str = FILENAME):
-        self.filename: str = filename
-        self.products: dict[str, Product] = {}
+    def __init__(self, filename: str | None = FILENAME):
+        self.filename: str | None = filename
+        self.products: list[Product] = []
         self.suppliers: dict[str, Supplier] = {}
-        self.load_inventory()
+        if filename:
+            self.load_inventory()
 
     def load_inventory(self) -> None:
         """Loads product records from JSON file and instantiates subclasses."""
-        if os.path.exists(self.filename):
+        if self.filename and os.path.exists(self.filename):
             try:
                 with open(self.filename, "r") as file:
                     data = json.load(file)
-                self.products = {
-                    item_id: product_from_dict(item_id, details, self.suppliers)
+                self.products = [
+                    product_from_dict(item_id, details, self.suppliers)
                     for item_id, details in data.items()
-                }
+                ]
                 print(f"{self.filename} found.")
                 print("Inventory loaded successfully.\n")
             except Exception as e:
                 print(f"Error loading {self.filename}: {e}")
                 print("Starting with empty inventory.\n")
-                self.products = {}
+                self.products = []
         else:
             print(f"{self.filename} not found.")
             print("Starting with empty inventory.\n")
-            self.products = {}
+            self.products = []
 
     def save_inventory(self, auto_exit: bool = False) -> None:
         """Serializes Product instances to dictionary format and writes to JSON."""
+        if not self.filename:
+            return
         print("Saving inventory before exit..." if auto_exit else "Saving inventory...")
         try:
-            serialized_data = {
-                item_id: prod.to_dict() for item_id, prod in self.products.items()
-            }
+            serialized_data = {p.product_id: p.to_dict() for p in self.products}
             with open(self.filename, "w") as file:
                 json.dump(serialized_data, file, indent=4)
             print(f"Inventory saved successfully to {self.filename}.\n")
@@ -248,21 +249,33 @@ class Inventory:
             print(f"Error saving inventory: {e}\n")
 
     def add_product(self, product: Product) -> bool:
-        """Adds a Product instance to the inventory if unique."""
-        if product.product_id in self.products:
+        """Adds an EXISTING Product object (created outside the Inventory)."""
+        if self.find_product(product.product_id):
             print("Error: Product ID already exists!\n")
             return False
-        self.products[product.product_id] = product
+        self.products.append(product)
         print("Product added successfully!\n")
         return True
 
-    def get_product(self, product_id: str) -> Product | None:
-        """Retrieves a Product object by ID."""
-        return self.products.get(product_id)
+    def remove_product(self, product_id: str) -> Product | None:
+        """Removes the reference only. The Product object itself survives."""
+        product = self.find_product(product_id)
+        if product is None:
+            print("Product not found.\n")
+            return None
+        self.products.remove(product)
+        print(f"Product {product_id} removed from inventory.\n")
+        return product
+
+    def find_product(self, product_id: str) -> Product | None:
+        for product in self.products:
+            if product.product_id == product_id:
+                return product
+        return None
 
     def update_product_stock(self, product_id: str, new_stock: int) -> bool:
         """Delegates stock update to the target Product object."""
-        product = self.get_product(product_id)
+        product = self.find_product(product_id)
         if product is None:
             print("Product not found.\n")
             return False
@@ -280,7 +293,7 @@ class Inventory:
         if not self.products:
             print("No items in inventory.\n")
             return
-        for product in self.products.values():
+        for product in self.products:
             ptype = "Physical" if isinstance(product, PhysicalProduct) else "Digital"
             print(
                 f"[{ptype}] ID: {product.product_id} | "
@@ -319,7 +332,7 @@ def prompt_add_product(inventory: Inventory) -> None:
         return
 
     item_id = input("Product ID: ").strip()
-    if inventory.get_product(item_id):
+    if inventory.find_product(item_id):
         print("Error: Product ID already exists!\n")
         return
 
@@ -348,7 +361,7 @@ def prompt_add_product(inventory: Inventory) -> None:
 def prompt_update_stock(inventory: Inventory) -> None:
     print("\nUpdate Stock")
     item_id = input("Enter Product ID: ").strip()
-    product = inventory.get_product(item_id)
+    product = inventory.find_product(item_id)
     if product is None:
         print("Product not found.\n")
         return
@@ -365,13 +378,19 @@ def prompt_update_stock(inventory: Inventory) -> None:
 def prompt_search_product(inventory: Inventory) -> None:
     print("\nSearch Product")
     item_id = input("Enter Product ID: ").strip()
-    product = inventory.get_product(item_id)
+    product = inventory.find_product(item_id)
     if product:
         print("\nProduct Found")
         product.display_information()
         print()
     else:
         print("\nProduct not found.\n")
+
+
+def prompt_remove_product(inventory: Inventory) -> None:
+    print("\nRemove Product")
+    item_id = input("Enter Product ID: ").strip()
+    inventory.remove_product(item_id)
 
 
 # ============================================================================
@@ -387,8 +406,9 @@ def main() -> None:
         print("2. Add Product")
         print("3. Update Stock")
         print("4. Search Product")
-        print("5. Save Inventory")
-        print("6. Exit")
+        print("5. Remove Product")
+        print("6. Save Inventory")
+        print("7. Exit")
 
         choice = input("Enter option: ").strip()
 
@@ -401,8 +421,10 @@ def main() -> None:
         elif choice == "4":
             prompt_search_product(inventory)
         elif choice == "5":
-            inventory.save_inventory()
+            prompt_remove_product(inventory)
         elif choice == "6":
+            inventory.save_inventory()
+        elif choice == "7":
             inventory.save_inventory(auto_exit=True)
             print("Thank you for using Inventory Management System.")
             print("Program terminated.")
