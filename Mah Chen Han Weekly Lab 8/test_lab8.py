@@ -1,7 +1,8 @@
 """Lab 8 tests: association, aggregation, composition, LSP, polymorphism.
 Run with:  python test_lab8.py
 """
-from inventory_manager import (Supplier, PhysicalProduct, DigitalProduct, Inventory, Order)
+from inventory_manager import (Supplier, Product, PhysicalProduct,
+                               DigitalProduct, Inventory, Order)
 
 
 def header(title: str) -> None:
@@ -84,7 +85,40 @@ def test_composition() -> None:
     print(f"Keyboard product still exists: {keyboard.name}")
 
 
+# ---------------------------------------------------------------- Section 6
+def show_product_details(product: Product) -> None:
+    product.display_information()
+    print(product.get_fulfilment_info())
+
+
+def test_lsp() -> None:
+    header("SECTION 6: LSP (substitutability)")
+    supplier = Supplier("S004", "MixedGoods", "mix@goods.sg")
+    phys = PhysicalProduct("P400", "Monitor", 250.0, 8, supplier, 4.5)
+    digi = DigitalProduct("D400", "Photo Editor", 79.0, 100, supplier, 900.0)
+
+    for product in (phys, digi):
+        show_product_details(product)       # same function, both work
+        product.update_stock(product.stock + 5)   # parent contract kept
+        print(f"{product.name} stock after update_stock: {product.stock}\n")
+
+
+# ---------------------------------------------------------------- Section 7
+def test_polymorphism() -> None:
+    header("SECTION 7: POLYMORPHISM (one loop, no isinstance)")
+    supplier = Supplier("S005", "AllInOne", "info@allinone.sg")
+    inventory = Inventory(filename=None)
+    inventory.add_product(PhysicalProduct("P500", "Headphones", 120.0, 12, supplier, 0.3))
+    inventory.add_product(DigitalProduct("D500", "Music Pack", 9.9, 1000, supplier, 300.0))
+
+    for product in inventory.products:
+        product.display_information()
+        print(product.get_fulfilment_info())
+
+
 if __name__ == "__main__":
     test_association()
     test_aggregation()
     test_composition()
+    test_lsp()
+    test_polymorphism()

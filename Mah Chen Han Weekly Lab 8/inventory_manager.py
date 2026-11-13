@@ -81,11 +81,17 @@ class Product(ABC):
     def display_information(self) -> None:
         """Displays common product information."""
         print("-" * 45)
+        print(f"Type: {self.get_product_type()}")
         print(f"ID: {self._product_id}")
         print(f"Name: {self.name}")
         print(f"Price: ${self._price:.2f}")
         print(f"Stock: {self._stock}")
         print(f"Supplier: {self.supplier.name} ({self.supplier.contact_email})")
+
+    @abstractmethod
+    def get_product_type(self) -> str:
+        """Returns a readable label for the product type (polymorphic)."""
+        pass
 
     @abstractmethod
     def get_fulfilment_info(self) -> str:
@@ -119,6 +125,9 @@ class PhysicalProduct(Product, CanBeShipped):
         print(f"Fulfilment: {self.get_fulfilment_info()}")
         print(f"Est. Shipping Cost: ${self.calculate_shipping_cost():.2f}")
         print("-" * 45)
+
+    def get_product_type(self) -> str:
+        return "Physical"
 
     def get_fulfilment_info(self) -> str:
         return "Requires physical warehouse dispatch and courier shipping."
@@ -154,6 +163,9 @@ class DigitalProduct(Product):
         print(f"Download Size: {self._download_size:.2f} MB")
         print(f"Fulfilment: {self.get_fulfilment_info()}")
         print("-" * 45)
+
+    def get_product_type(self) -> str:
+        return "Digital"
 
     def get_fulfilment_info(self) -> str:
         return "Instant digital delivery via download link upon payment."
@@ -288,19 +300,23 @@ class Inventory:
             return False
 
     def display_all(self) -> None:
-        """Displays summary of all stored products."""
+        """Summary list. Polymorphic: no isinstance() checks."""
         print("\nCurrent Inventory")
         if not self.products:
             print("No items in inventory.\n")
             return
         for product in self.products:
-            ptype = "Physical" if isinstance(product, PhysicalProduct) else "Digital"
             print(
-                f"[{ptype}] ID: {product.product_id} | "
+                f"[{product.get_product_type()}] ID: {product.product_id} | "
                 f"Name: {product.name} | Price: ${product.price:.2f} | "
                 f"Stock: {product.stock} | Supplier: {product.supplier.name}"
             )
         print()
+
+    def display_all_products(self) -> None:
+        """Full details. Each Product picks its own display_information()."""
+        for product in self.products:
+            product.display_information()
 
 
 # ============================================================================
