@@ -8,6 +8,7 @@ from no_discount import NoDiscount
 from order import Order
 from percentage_discount import PercentageDiscount
 from physical_product import PhysicalProduct
+from student_discount import StudentDiscount
 from supplier import Supplier
 
 
@@ -58,6 +59,18 @@ class TestOrderUsesStrategy(unittest.TestCase):
         shared = PercentageDiscount(10)
         order_a, order_b = Order("A", shared), Order("B", shared)
         self.assertIs(order_a.discount, order_b.discount)
+
+
+class TestExtendWithoutModifying(unittest.TestCase):
+    """Section 2.4: StudentDiscount works with Order, which was not changed."""
+
+    def test_student_discount_takes_5_percent_off(self):
+        self.assertAlmostEqual(StudentDiscount().apply(100.0), 95.0)
+
+    def test_student_discount_plugs_into_existing_order(self):
+        order = make_order_totalling_250()
+        order.set_discount(StudentDiscount())
+        self.assertAlmostEqual(order.calculate_total(), 237.5)
 
 
 if __name__ == "__main__":
