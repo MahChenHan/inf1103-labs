@@ -1,8 +1,6 @@
 """Entry point: menu-driven CLI for the Inventory Management System."""
-from digital_product import DigitalProduct
 from inventory import FILENAME, Inventory
-from physical_product import PhysicalProduct
-from product import Product
+from product_factory import ProductFactory
 from supplier import Supplier
 
 
@@ -37,24 +35,21 @@ def prompt_add_product(inventory: Inventory) -> None:
         return
 
     name = input("Product Name: ").strip()
+    product_type = "physical" if ptype_choice == "1" else "digital"
     try:
         price = float(input("Price: "))
         stock = int(input("Stock Quantity: "))
-        if ptype_choice == "1":
-            weight = float(input("Weight (kg): "))
+        if product_type == "physical":
+            weight_or_size = float(input("Weight (kg): "))
         else:
-            download_size = float(input("Download Size (MB): "))
+            weight_or_size = float(input("Download Size (MB): "))
     except ValueError:
         print("Invalid numerical input! Product not added.\n")
         return
 
     supplier = prompt_supplier(inventory)
-    if ptype_choice == "1":
-        new_product: Product = PhysicalProduct(item_id, name, price, stock,
-                                               supplier, weight)
-    else:
-        new_product = DigitalProduct(item_id, name, price, stock,
-                                     supplier, download_size)
+    new_product = ProductFactory.create(product_type, item_id, name, price,
+                                        stock, supplier, weight_or_size)
     inventory.add_product(new_product)
 
 

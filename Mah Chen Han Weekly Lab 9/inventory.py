@@ -1,9 +1,8 @@
 import json
 import os
 
-from digital_product import DigitalProduct
-from physical_product import PhysicalProduct
 from product import Product
+from product_factory import ProductFactory
 from supplier import Supplier
 
 FILENAME = "inventory.json"
@@ -30,15 +29,10 @@ def product_from_dict(product_id: str, data: dict,
         supplier = DEFAULT_SUPPLIER  # old Lab 7 records have no supplier
 
     product_type = data.get("type", "physical")
-    if product_type == "physical":
-        return PhysicalProduct(product_id, data["name"], data["price"],
-                               data["stock"], supplier, data.get("weight", 0.0))
-    elif product_type == "digital":
-        return DigitalProduct(product_id, data["name"], data["price"],
-                              data["stock"], supplier,
-                              data.get("download_size", 0.0))
-    else:
-        raise ValueError(f"Unknown product type: {product_type}")
+    weight_or_size = data.get("weight", data.get("download_size", 0.0))
+    return ProductFactory.create(product_type, product_id, data["name"],
+                                 data["price"], data["stock"], supplier,
+                                 weight_or_size)
 
 
 class Inventory:
