@@ -1,8 +1,12 @@
 """Lab 8 tests: association, aggregation, composition, LSP, polymorphism.
 Run with:  python test_lab8.py
 """
-from inventory_manager import (Supplier, Product, PhysicalProduct,
-                               DigitalProduct, Inventory, Order)
+from digital_product import DigitalProduct
+from inventory import Inventory
+from order import Order
+from physical_product import PhysicalProduct
+from product import Product
+from supplier import Supplier
 
 
 def header(title: str) -> None:
