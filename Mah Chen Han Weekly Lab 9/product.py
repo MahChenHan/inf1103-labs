@@ -8,6 +8,11 @@ class Product(ABC):
 
     def __init__(self, product_id: str, name: str, price: float, stock: int,
                  supplier: Supplier):
+        # VALIDATION: Product owns the rules for its own price and stock
+        if float(price) <= 0:
+            raise ValueError("Price must be greater than zero.")
+        if int(stock) < 0:
+            raise ValueError("Stock quantity cannot be negative.")
         self._product_id: str = str(product_id)
         self.name: str = name
         self._price: float = float(price)
@@ -30,7 +35,7 @@ class Product(ABC):
     def update_stock(self, new_stock: int) -> None:
         """Updates internal stock state after input validation."""
         if new_stock < 0:
-            raise ValueError("Stock quantity cannot be negative!")
+            raise ValueError("Stock quantity cannot be negative.")
         self._stock = int(new_stock)
 
     def display_information(self) -> None:

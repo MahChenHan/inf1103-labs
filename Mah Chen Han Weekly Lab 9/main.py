@@ -48,8 +48,12 @@ def prompt_add_product(inventory: Inventory) -> None:
         return
 
     supplier = prompt_supplier(inventory)
-    new_product = ProductFactory.create(product_type, item_id, name, price,
-                                        stock, supplier, weight_or_size)
+    try:
+        new_product = ProductFactory.create(product_type, item_id, name, price,
+                                            stock, supplier, weight_or_size)
+    except ValueError as error:          # validation rule broken
+        print(f"{error} Product not added.\n")
+        return
     inventory.add_product(new_product)
 
 
